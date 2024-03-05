@@ -90,15 +90,15 @@ class LLMfuzzer:
                 )
                 #Contains Check
                 if (test['Weight'] == 'Absolute'):
-                   if (test['Comparer'] == 'Contains'):
-                       #Check if any Output is in Response
-                       if any(output.lower() in response.text.lower() for output in test['Output']):
-                           if (test['Weight'] == 'Absolute'):
-                               print(colored('LLM Vulnerabale to "' + attackConfig['Name'] + '"', 'red'))
-                               break
-                   elif (test['Weight'] == 'Potential'):
-                       print(colored('LLM Potentially vulnerabale to "' + attackConfig['Name'] + '"', 'yellow'))
-                       break
+                    if (test['Comparer'] == 'Contains'):
+                        #Check if any Output is in Response
+                        if any(output.lower() in response.text.lower() for output in test['Output']):
+                            if (test['Weight'] == 'Absolute'):
+                                print(colored('LLM Vulnerabale to "' + attackConfig['Name'] + '"', 'red'))
+                                break
+                    elif (test['Weight'] == 'Potential'):
+                        print(colored('LLM Potentially vulnerabale to "' + attackConfig['Name'] + '"', 'yellow'))
+                        break
             except requests.exceptions.RequestException as e:
                 print('Connection error, can''t continue evaluation.')
                 raise SystemExit(e)
