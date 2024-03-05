@@ -6,6 +6,9 @@ import yaml
 import pyfiglet
 from termcolor import colored
 
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -52,7 +55,9 @@ class LLMfuzzer:
                 self.config['Connection']['Url'],
                 headers= self.config['Connection']['Headers'],
                 cookies= self.config['Connection']['Cookies'],
-                json= self.config['Connection']['Initial-POST-Body']
+                proxies= self.config['Resources']['Proxies'],
+                json= self.config['Connection']['Initial-POST-Body'],
+                verify=False
             )
             
             if response.status_code != 200:
@@ -79,7 +84,9 @@ class LLMfuzzer:
                     self.config['Connection']['Url'],
                     headers= self.config['Connection']['Headers'],
                     cookies= self.config['Connection']['Cookies'],
-                    json= self.config['Connection']['Initial-POST-Body']
+                    proxies= self.config['Resources']['Proxies'],
+                    json= self.config['Connection']['Initial-POST-Body'],
+                    verify=False
                 )
                 #Contains Check
                 if (test['Weight'] == 'Absolute'):
