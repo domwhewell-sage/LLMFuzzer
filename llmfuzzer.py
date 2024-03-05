@@ -94,10 +94,8 @@ class LLMfuzzer:
                         #Check if any Output is in Response
                         if any(output.lower() in response.text.lower() for output in test['Output']):
                             print(colored('LLM Vulnerabale to "' + attackConfig['Name'] + '"', 'red'))
-                            break
                 elif (test['Weight'] == 'Potential'):
                     print(colored('LLM Potentially vulnerabale to "' + attackConfig['Name'] + '"', 'red'))
-                    break
             except requests.exceptions.RequestException as e:
                 print('Connection error, can''t continue evaluation.')
                 raise SystemExit(e)
