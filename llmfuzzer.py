@@ -1,5 +1,6 @@
 import os
 import os.path
+import glob
 import requests
 import yaml
 import pyfiglet
@@ -48,11 +49,13 @@ class LLMfuzzer:
     def checkConnection(self):
         try:
             response = requests.post(
-                self.config['Connection']['Url'], 
-                json= { self.config['Connection']['Query-Attribute']: 'Print the capital of Brazil, in English.' }
+                self.config['Connection']['Url'],
+                headers= self.config['Connection']['Headers'],
+                cookies= self.config['Connection']['Cookies'],
+                json= self.config['Connection']['Initial-POST-Body']
             )
             
-            if ('brasilia' not in response.text.lower()):
+            if response.status_code != 200:
                 raise Exception('Connection error, can''t continue evaluation.')
             print(colored('Success connecting to LLM via API', 'green'))
         except requests.exceptions.RequestException as e:
@@ -61,7 +64,7 @@ class LLMfuzzer:
         
     def runAttack(self, path):
         attackConfig = ''
-        with open(os.getcwd() + path, "r") as stream:
+        with open(path, "r") as stream:
             try:
                 attackConfig = yaml.safe_load(stream)                
             except yaml.YAMLError as exc:
@@ -70,23 +73,31 @@ class LLMfuzzer:
         
         for test in attackConfig['Tests']:
             try:
+                # Set the initial request body then update the query attribute
+                self.config['Connection']['Initial-POST-Body'][self.config['Connection']['Query-Attribute']] = test['Query'].replace('*collaborator-url', self.config['Resources']['Collaborator-URL'])
                 response = requests.post(
-                self.config['Connection']['Url'], 
-                json={self.config['Connection']['Query-Attribute']: test['Query'] } )
-                
+                    self.config['Connection']['Url'],
+                    headers= self.config['Connection']['Headers'],
+                    cookies= self.config['Connection']['Cookies'],
+                    json= self.config['Connection']['Initial-POST-Body']
+                )
                 #Contains Check
-                if (test['Comparer'] == 'Contains'):
-                    #Check if any Output is in Response
-                    if any(output.lower() in response.text.lower() for output in test['Output']):
-                        if (test['Weight'] == 'Absolute'):
-                            print(colored('LLM Vulnerabale to "' + attackConfig['Name'] + '"', 'red'))
-                            break
+                if (test['Weight'] == 'Absolute'):
+                   if (test['Comparer'] == 'Contains'):
+                       #Check if any Output is in Response
+                       if any(output.lower() in response.text.lower() for output in test['Output']):
+                           if (test['Weight'] == 'Absolute'):
+                               print(colored('LLM Vulnerabale to "' + attackConfig['Name'] + '"', 'red'))
+                               break
+                   elif (test['Weight'] == 'Potential'):
+                       print(colored('LLM Potentially vulnerabale to "' + attackConfig['Name'] + '"', 'yellow'))
+                       break
             except requests.exceptions.RequestException as e:
                 print('Connection error, can''t continue evaluation.')
                 raise SystemExit(e)
         
     def runAttacks(self):
-        # Fetch all chosen tests from config
-        for attack in self.config['Attacks']:
-            self.runAttack(attack['Path'])
+        # Fetch all tests from attacks folder
+        for attack in glob.glob(self.config['attackFiles']):
+            self.runAttack(attack)
 
