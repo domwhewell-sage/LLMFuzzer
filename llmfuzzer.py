@@ -1,5 +1,7 @@
 import os
 import os.path
+import re
+import itertools
 import glob
 import requests
 import yaml
@@ -74,31 +76,52 @@ class LLMfuzzer:
                 attackConfig = yaml.safe_load(stream)                
             except yaml.YAMLError as exc:
                 raise Exception('Can''t read attack file!')
+            
+        variables = attackConfig.get('Variables', {})
+        variables['collaborator-url'] = [self.config['Resources']['Collaborator-URL']]
+
         print(colored('Attack "' + attackConfig['Name'] + '" loaded. Running.', 'yellow'))
         
         for test in attackConfig['Tests']:
-            try:
-                # Set the initial request body then update the query attribute
-                self.config['Connection']['Initial-POST-Body'][self.config['Connection']['Query-Attribute']] = test['Query'].replace('*collaborator-url', self.config['Resources']['Collaborator-URL'])
-                response = requests.post(
-                    self.config['Connection']['Url'],
-                    headers= self.config['Connection']['Headers'],
-                    cookies= self.config['Connection']['Cookies'],
-                    proxies= self.config['Resources']['Proxies'],
-                    json= self.config['Connection']['Initial-POST-Body'],
-                    verify=False
-                )
-                #Contains Check
-                if (test['Weight'] == 'Absolute'):
-                    if (test['Comparer'] == 'Contains'):
-                        #Check if any Output is in Response
-                        if any(output.lower() in response.text.lower() for output in test['Output']):
-                            print(colored('LLM Vulnerabale to "' + attackConfig['Name'] + '"', 'red'))
-                elif (test['Weight'] == 'Potential'):
-                    print(colored('LLM Potentially vulnerabale to "' + attackConfig['Name'] + '"', 'red'))
-            except requests.exceptions.RequestException as e:
-                print('Connection error, can''t continue evaluation.')
-                raise SystemExit(e)
+            queries = []
+            query = test['Query']
+            vars_in_query = re.findall(r'{{ (.*?) }}', query)
+            combinations = list(itertools.product(*(variables[var] for var in vars_in_query)))
+            for combination in combinations:
+                temp_query = test['Query']
+                for var_name, var_value in zip(vars_in_query, combination):
+                    temp_query = temp_query.replace('{{ '+var_name+' }}', var_value)
+                queries.append(temp_query)
+            for query in queries:
+                try:
+                    # Set the initial request body then update the query attribute
+                    self.config['Connection']['Initial-POST-Body'][self.config['Connection']['Query-Attribute']] = query
+                    response = requests.post(
+                        self.config['Connection']['Url'],
+                        headers= self.config['Connection']['Headers'],
+                        cookies= self.config['Connection']['Cookies'],
+                        proxies= self.config['Resources']['Proxies'],
+                        json= self.config['Connection']['Initial-POST-Body'],
+                        verify=False
+                    )
+                    #Contains Check
+                    if (test['Weight'] == 'Absolute'):
+                        result = False
+                        if (test['Comparer'] == 'Contains'):
+                            #Check if any Output is in Response
+                            if any(output.lower() in response.text.lower() for output in test['Output']):
+                                result = True
+                        elif (test['Comparer'] == 'Regex'):
+                            #Check if any Regex match the response
+                            if any(re.findall(regex, response.text) for regex in test['Regex']):
+                                result = True
+                        if result:
+                            print(colored('LLM Vulnerable to "' + attackConfig['Name'] + '"', 'red'))
+                    elif (test['Weight'] == 'Potential'):
+                        print(colored('LLM Potentially vulnerable to "' + attackConfig['Name'] + '"', 'red'))
+                except requests.exceptions.RequestException as e:
+                    print('Connection error, can''t continue evaluation.')
+                    raise SystemExit(e)
         
     def runAttacks(self):
         # Fetch all tests from attacks folder
