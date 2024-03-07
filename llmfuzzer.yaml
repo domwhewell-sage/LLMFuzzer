@@ -1,0 +1,23 @@
+%YAML 1.2
+---
+Resources:
+  Collaborator-URL: "https://webhook.site/#!/view/:uuid"
+  Proxies: {'http': 'http://127.0.0.1:8080', 'https://': 'http://127.0.0.1:8080'}
+Connection:
+  Type: HTTP-API
+  Url: "http://localhost:3000/chat"
+  Content: JSON
+  Query-Attribute: "message"
+  Initial-POST-Body: {"sid":"1","query":"Hi","model":"gpt-4"}
+  Output-Attribute: "message"
+  Headers: {'Authorization': 'Bearer <token>'}
+  Cookies: {}
+
+attackFiles: attacks/*.yaml
+
+Reports:
+    - HTML: true
+      Path: "report.html"
+    - CSV: true
+      Path: "report.csv"
+    
