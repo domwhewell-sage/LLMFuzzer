@@ -65,16 +65,20 @@ cd LLMFuzzer
 pip install -r requirements.txt
 ```
 
-4. Edit **llmfuzzer.cfg** with your LLM API endpoint (LLMFuzzer -> Your Application -> LLM)
+4. Edit **llmfuzzer.yaml** with your LLM API endpoint (LLMFuzzer -> Your Application -> LLM)
 ```bash
-Connection: 
+Resources:
+  Collaborator-URL: "https://webhook.site/#!/view/:uuid" # The LLM will be queried to perform HTTP requests to this URL
+  Proxies: {'http': 'http://127.0.0.1:8080', 'https://': 'http://127.0.0.1:8080'} # You can supply proxies in https://requests.readthedocs.io/en/latest/user/advanced/#proxies format or you can make this an empty dictionary so a proxy is not used
+Connection:
   Type: HTTP-API
   Url: "http://localhost:3000/chat" # Your LLM API
   Content: JSON
   Query-Attribute: "query" # Your JSON query attribute
-  Output-Attribute: "answer" # Your JSON response attribute
-  Headers: {'enwiki_session': '17ab96bd8ffbe8ca58a78657a918558'} # Add HTTP Headers if needed 
-  Cookie: {'enwiki_session': '17ab96bd8ffbe8ca58a78657a918558'} # Add Cookies if needed
+  Initial-POST-Body: {"sid":"1","query":"Hi","model":"gpt-4"} # The JSON body that must be sent to the LLM the attribute you specify in "Query-Attribute" is where your query goes
+  Output-Attribute: "message" # Your JSON response attribute
+  Headers: {'Authorization': 'Bearer <token>'} # Add HTTP Headers if needed 
+  Cookies: {} # Add Cookies if needed
 ```
 
 5. Run LLMFuzzer
