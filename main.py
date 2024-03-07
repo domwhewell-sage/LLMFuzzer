@@ -4,7 +4,7 @@ import llmfuzzer
 llmfuzzer.printMotd()
    
 # Create llmfuzzer instance
-llmfuzzer = llmfuzzer.LLMfuzzer("llmfuzzer.cfg")
+llmfuzzer = llmfuzzer.LLMfuzzer("llmfuzzer.yaml")
 
 # Check for basic connection to LLM API
 llmfuzzer.checkConnection()
