@@ -80,9 +80,10 @@ class LLMfuzzer:
         variables = attackConfig.get('Variables', {})
         variables['collaborator-url'] = [self.config['Resources']['Collaborator-URL']]
 
-        print(colored('Attack "' + attackConfig['Name'] + '" loaded. Running.', 'yellow'))
+        print(colored('Attack "' + attackConfig['Name'] + '" loaded.', 'blue'))
         
         for test in attackConfig['Tests']:
+            print(colored('  Test name: ' + test['Name'], 'green'))
             queries = []
             query = test['Query']
             vars_in_query = re.findall(r'{{ (.*?) }}', query)
@@ -92,8 +93,9 @@ class LLMfuzzer:
                 for var_name, var_value in zip(vars_in_query, combination):
                     temp_query = temp_query.replace('{{ '+var_name+' }}', var_value)
                 queries.append(temp_query)
-            for query in queries:
+            for i, query in enumerate(queries):
                 try:
+                    print(colored('    Sending query ' + str(i) + ' of ' + str(len(queries)), 'yellow'))
                     # Set the initial request body then update the query attribute
                     self.config['Connection']['Initial-POST-Body'][self.config['Connection']['Query-Attribute']] = query
                     response = requests.post(
