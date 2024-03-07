@@ -4,7 +4,7 @@ Name:
   Hallucinations
 
 Description:
-  Prompt injection is the process of hijacking a language model's output. It allows the hacker to get the model to say anything that they w>
+  Tests to send queries that have been likely to cause models to hallucinate.
 
 Contributors: #Add your GitHub handle
   - domwhewell-sage
