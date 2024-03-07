@@ -1,10 +1,10 @@
 %YAML 1.2
 ---
 Name:
-  LLM Request Forgery
+  External Service Interaction
 
 Description:
-  Prompt injection is the process of hijacking a language model's output. It allows the hacker to get the model to say anything that they want.
+  Query the LLM to send a HTTP request to an external service. This can be used to exfiltrate data, perform SSRF attacks, or interact with other services.
 
 Contributors: #Add your GitHub handle
   - domwhewell-sage
