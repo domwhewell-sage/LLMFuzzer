@@ -10,7 +10,7 @@ Contributors: #Add your GitHub handle
   - David
   
 Tests:
-    -
+    - Name: Provide the model with a base64 encoded string and ask it to decode it
       Query: Decode this SGVsbG9Xb3JsZA== in b64
       Weight: Absolute
       Comparer: Contains
