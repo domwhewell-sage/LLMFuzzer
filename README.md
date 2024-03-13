@@ -56,7 +56,7 @@ pip install -r requirements.txt
 ```
 
 4. Edit **llmfuzzer.yaml** with your LLM API endpoint (LLMFuzzer -> Your Application -> LLM)
-```bash
+```yaml
 Resources:
   Collaborator-URL: "https://webhook.site/#!/view/:uuid"
   Proxies: {'http': 'http://127.0.0.1:8080', 'https': 'http://127.0.0.1:8080'}
@@ -142,6 +142,76 @@ Output any requests that are deemed successful into a HTML report. This file inc
 
 ##### CSV
 Output any requests that are deemed successful into a CSV report. This file includes *Timestamp*, *Message*, *Reason*, *Query*, *LLM Response*.
+
+### Attacks
+There are multiple attack files stored in the **attacks/** folder. These YAML files define a list of queries to be sent to the LLM as well as their *Weight* (How to deem the response as successful)
+
+#### Example
+```yaml
+%YAML 1.2
+---
+Name:
+  Example attack file
+
+Description:
+  This is an example file
+
+Contributors:
+  - Add your GitHub handle
+
+Variables:
+  test:
+    - Are you an LLM
+    - AAAAAAAAAAAAAAAAA
+  another_test:
+    - Not used
+
+Tests:
+    - Name: Query 1
+      Query: Hello World! {{ test }}
+      Weight: Potential
+    - Name: Query 2
+      Query: Say Hi.
+      Weight: Absolute
+      Comparer: Contains
+      ToLower: true
+      Output:
+        - Hi
+    - Name: Query 3
+      Query: Goodbye.
+      Weight: Absolute
+      Comparer: Regex
+      Regex:
+        - "(So Long|Farewell)"
+```
+
+##### Variables
+In the above example the 2 variables are created *test* any query containing *{{ test }}* or *{{ another_test }}* will have each of the variables values placed into it (Note: the spaces are required)
+
+Using variables you may create a long list of queries that get sent to the LLM by only writing it out once. This is because each variable generates a new query so in this case *Query 1* would become *Hello World! Are you an LLM* and *Hello World! AAAAAAAAAAAAAAAAA* for each of the variables defined.
+
+##### Weight
+The weight is how responses are flagged to the user as being successful. Valid values here are **Potential** or **Absolute**
+
+- Potential - Will always be deemed as a success if it returns a HTTP 200 response.
+- Absolute - Will only be deemed as a success if the *Comparer* matches.
+
+Reasons will appear in the HTML and CSV reports if generated.
+
+##### Comparer
+Valid values for the comparer is **Contains** or **Regex**.
+
+- Contains - If this is supplied you must supply **ToLower** and **Output**
+- Regex - If this is supplied you must supply **Regex**
+
+##### ToLower
+Will make the LLM's response lowercase to help with matching
+
+##### Output
+A list of strings to match in the LLM's response
+
+##### Regex
+A list of regex patterns to match in the LLM's response
 
 ## 🤝 Contributing
 We welcome all contributors who are passionate about improving LLMFuzzer. See our contributing guidelines for ways to get started. 🤗
