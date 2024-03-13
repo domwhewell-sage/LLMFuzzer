@@ -5,6 +5,7 @@ import itertools
 import glob
 import requests
 import yaml
+import html
 import jsonpointer
 import pyfiglet
 import logging
@@ -40,21 +41,27 @@ class LogFilter(logging.Filter):
 
 class HTMLFormatter(logging.Formatter):
     def format(self, record):
-        html = "<p><b>Time:</b> {0}</p><p><b>Message:</b> {1}</p>".format(self.formatTime(record, self.datefmt), record.getMessage())
+        html_source = "<p><b>Time:</b> {0}</p><p><b>Message:</b> {1}</p>".format(self.formatTime(record, self.datefmt), record.getMessage())
+        if 'reason' in record.__dict__:
+            reason = record.reason
+            html_source += "<p><b>Reason:</b> {0}</p>".format(reason)
         if 'llm_request' in record.__dict__:
             req = record.llm_request
-            html += "<p>User Query:</p>"
-            html += "<pre style='background-color: #f0f0f0; padding: 10px;'>{0}</pre>".format(req)
+            html_source += "<p>User Query:</p>"
+            html_source += "<pre style='background-color: #f0f0f0; padding: 10px; white-space: pre-wrap;'>{0}</pre>".format(html.escape(req))
         if 'llm_response' in record.__dict__:
             res = record.llm_response
-            html += "<p>LLM Response:</p>"
-            html += "<pre style='background-color: #f0f0f0; padding: 10px;'>{0}</pre>".format(res)
-        html += "<hr/>"
-        return html
+            html_source += "<p>LLM Response:</p>"
+            html_source += "<pre style='background-color: #f0f0f0; padding: 10px; white-space: pre-wrap;'>{0}</pre>".format(html.escape(res))
+        html_source += "<hr/>"
+        return html_source
 
 class CSVFormatter(logging.Formatter):
     def format(self, record):
         csv_row = "{0},{1}".format(self.formatTime(record, self.datefmt), record.getMessage())
+        if 'reason' in record.__dict__:
+            reason = record.reason
+            csv_row += ",{0}".format(reason)
         if 'llm_request' in record.__dict__:
             req = record.llm_request
             csv_row += ",{0}".format(req)
@@ -168,6 +175,8 @@ class LLMfuzzer:
             for i, query in enumerate(queries):
                 try:
                     self.logger.info('Sending query ' + str(i) + ' of ' + str(len(queries)))
+                    message = ""
+                    reason = ""
                     # Set the initial request body then update the query attribute
                     jsonpointer.set_pointer(self.config['Connection']['Initial-POST-Body'], self.config['Connection']['Query-Attribute'], query)
                     response = requests.post(
@@ -187,23 +196,25 @@ class LLMfuzzer:
                                 #Check if any Output is in Response
                                 if any(output.lower() in llm_response for output in test['Output']):
                                     result = True
+                                    reason = 'Response contains: ' + ' or '.join(test['Output'])
                             elif (test['Comparer'] == 'Regex'):
                                 #Check if any Regex match the response
                                 try:
                                     if any(re.findall(regex, llm_response) for regex in test['Regex']):
                                         result = True
+                                        reason = 'Regex matched with: ' + ' or '.join(test['Regex'])
                                 except re.error:
                                     self.logger.warning('Invalid regex: ' + test['Regex'])
                             if result:
                                 message = 'LLM Vulnerable to "' + attackConfig['Name'] + '"'
-                                self.logger.critical(message)
                         elif (test['Weight'] == 'Potential'):
                             message = 'LLM Potentially vulnerable to "' + attackConfig['Name'] + '"'
-                            self.logger.error(message)
+                            reason = 'HTTP Status Code: ' + str(response.status_code)
+                        if message and reason:
+                            self.logger.critical(message, extra={'report': True, 'llm_request': query, 'llm_response': llm_response, 'reason': reason})
                 except requests.exceptions.RequestException as e:
                     self.logger.critical('Connection error, can''t continue evaluation.')
                     raise SystemExit(e)
-                self.logger.info(message, extra={'report': True, 'llm_request': query, 'llm_response': llm_response})
         
     def runAttacks(self):
         # Fetch all tests from attacks folder
