@@ -4,11 +4,11 @@
 
 ![LLMFuzzer-shell](https://github.com/mnns/LLMFuzzer/assets/1796080/71b006df-706c-43f6-acd1-49646dbcb0e5)
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Version](https://img.shields.io/badge/version-1.0.1-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Stars](https://img.shields.io/github/stars/mnns/LLMFuzzer)
-![Forks](https://img.shields.io/github/forks/mnns/LLMFuzzer)
-![Issues](https://img.shields.io/github/issues/mnns/LLMFuzzer)
+![Stars](https://img.shields.io/github/stars/domwhewell-sage/LLMFuzzer)
+![Forks](https://img.shields.io/github/forks/domwhewell-sage/LLMFuzzer)
+![Issues](https://img.shields.io/github/issues/domwhewell-sage/LLMFuzzer)
 
 
 [![forthebadge](https://forthebadge.com/images/badges/built-with-love.svg)](https://forthebadge.com)
@@ -42,7 +42,7 @@ If you're a security enthusiast, a pentester, or a cybersec researcher who loves
 
 1. Clone the repo
 ```bash
-git clone https://github.com/mnns/LLMFuzzer.git
+git clone https://github.com/domwhewell-sage/LLMFuzzer.git
 ```
 
 2. Navigate to the project directory
