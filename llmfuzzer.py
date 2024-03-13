@@ -34,22 +34,34 @@ def printMotd():
     print(colored('### Do not attempt to harm or scan other LLMs!', 'red'))
     print()
 
+class LogFilter(logging.Filter):
+    def filter(self, record):
+        return 'report' in record.__dict__
+
 class HTMLFormatter(logging.Formatter):
     def format(self, record):
-        html = "<p><b>Time:</b> {0}</p><p><b>Level:</b> {1}</p><p><b>Message:</b> {2}</p><hr/>".format(
-            self.formatTime(record, self.datefmt),
-            record.levelname,
-            record.getMessage()
-        )
+        html = "<p><b>Time:</b> {0}</p><p><b>Message:</b> {1}</p>".format(self.formatTime(record, self.datefmt), record.getMessage())
+        if 'llm_request' in record.__dict__:
+            req = record.llm_request
+            html += "<p>User Query:</p>"
+            html += "<pre style='background-color: #f0f0f0; padding: 10px;'>{0}</pre>".format(req)
+        if 'llm_response' in record.__dict__:
+            res = record.llm_response
+            html += "<p>LLM Response:</p>"
+            html += "<pre style='background-color: #f0f0f0; padding: 10px;'>{0}</pre>".format(res)
+        html += "<hr/>"
         return html
 
 class CSVFormatter(logging.Formatter):
     def format(self, record):
-        return '{0},{1},{2}\n'.format(
-            self.formatTime(record, self.datefmt),
-            record.levelname,
-            record.getMessage()
-        )
+        csv_row = "{0},{1}".format(self.formatTime(record, self.datefmt), record.getMessage())
+        if 'llm_request' in record.__dict__:
+            req = record.llm_request
+            csv_row += ",{0}".format(req)
+        if 'llm_response' in record.__dict__:
+            res = record.llm_response
+            csv_row += ",{0}".format(res)
+        return csv_row
 
 class LLMfuzzer:
  
@@ -73,12 +85,14 @@ class LLMfuzzer:
                 html_formatter = HTMLFormatter()
                 html_handler = logging.FileHandler(reporttype.get("Path", "report.html"), mode='w')
                 html_handler.setFormatter(html_formatter)
+                html_handler.addFilter(LogFilter())
                 log.addHandler(html_handler)
             
             if reporttype.get("CSV", False):
                 csv_formatter = CSVFormatter()
                 csv_handler = logging.FileHandler(reporttype.get("Path", "report.csv"), mode='w')
                 csv_handler.setFormatter(csv_formatter)
+                csv_handler.addFilter(LogFilter())
                 log.addHandler(csv_handler)
 
         console_handler = logging.StreamHandler()
@@ -181,12 +195,15 @@ class LLMfuzzer:
                                 except re.error:
                                     self.logger.warning('Invalid regex: ' + test['Regex'])
                             if result:
-                                self.logger.critical('LLM Vulnerable to "' + attackConfig['Name'] + '"')
+                                message = 'LLM Vulnerable to "' + attackConfig['Name'] + '"'
+                                self.logger.critical(message)
                         elif (test['Weight'] == 'Potential'):
-                            self.logger.error('LLM Potentially vulnerable to "' + attackConfig['Name'] + '"')
+                            message = 'LLM Potentially vulnerable to "' + attackConfig['Name'] + '"'
+                            self.logger.error(message)
                 except requests.exceptions.RequestException as e:
                     self.logger.critical('Connection error, can''t continue evaluation.')
                     raise SystemExit(e)
+                self.logger.info(message, extra={'report': True, 'llm_request': query, 'llm_response': llm_response})
         
     def runAttacks(self):
         # Fetch all tests from attacks folder
