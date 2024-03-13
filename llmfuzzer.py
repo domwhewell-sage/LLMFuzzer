@@ -7,6 +7,8 @@ import requests
 import yaml
 import jsonpointer
 import pyfiglet
+import logging
+import colorlog
 from termcolor import colored
 
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
@@ -32,18 +34,73 @@ def printMotd():
     print(colored('### Do not attempt to harm or scan other LLMs!', 'red'))
     print()
 
+class HTMLFormatter(logging.Formatter):
+    def format(self, record):
+        html = "<p><b>Time:</b> {0}</p><p><b>Level:</b> {1}</p><p><b>Message:</b> {2}</p><hr/>".format(
+            self.formatTime(record, self.datefmt),
+            record.levelname,
+            record.getMessage()
+        )
+        return html
+
+class CSVFormatter(logging.Formatter):
+    def format(self, record):
+        return '{0},{1},{2}\n'.format(
+            self.formatTime(record, self.datefmt),
+            record.levelname,
+            record.getMessage()
+        )
+
 class LLMfuzzer:
  
     def __init__(self, configPath):
         self.configPath = configPath
-        print('! Loading config from: ' + configPath)
-        
         # Check if config file exists
         if (not os.path.isfile(self.configPath)):
             raise Exception('Can''t read config file!')
             
         # Load YAML config
         self._loadConfig()
+        
+        self.logger = self._setup_logger('LLMfuzzer')
+        self.logger.info('! Loading config from: ' + configPath)
+    
+    def _setup_logger(self, logger_name, level=logging.INFO):
+        log = logging.getLogger(logger_name)
+
+        for reporttype in self.config['Reports']:
+            if reporttype.get("HTML", False):
+                html_formatter = HTMLFormatter()
+                html_handler = logging.FileHandler(reporttype.get("Path", "report.html"), mode='w')
+                html_handler.setFormatter(html_formatter)
+                log.addHandler(html_handler)
+            
+            if reporttype.get("CSV", False):
+                csv_formatter = CSVFormatter()
+                csv_handler = logging.FileHandler(reporttype.get("Path", "report.csv"), mode='w')
+                csv_handler.setFormatter(csv_formatter)
+                log.addHandler(csv_handler)
+
+        console_handler = logging.StreamHandler()
+        console_formatter = colorlog.ColoredFormatter(
+            "%(log_color)s%(message)s",
+            datefmt=None,
+            reset=True,
+            log_colors={
+                'DEBUG':    'cyan',
+                'INFO':     'green',
+                'WARNING':  'yellow',
+                'ERROR':    'red',
+                'CRITICAL': 'red,bg_white',
+            },
+            secondary_log_colors={},
+            style='%'
+        )
+        console_handler.setFormatter(console_formatter)
+
+        log.setLevel(level)
+        log.addHandler(console_handler)
+        return log
 
     def _loadConfig(self):
         with open(self.configPath, "r") as stream:
@@ -65,7 +122,7 @@ class LLMfuzzer:
             
             if response.status_code != 200:
                 raise Exception('Connection error, can''t continue evaluation.')
-            print(colored('Success connecting to LLM via API', 'green'))
+            self.logger.info('Success connecting to LLM via API')
         except requests.exceptions.RequestException as e:
             raise Exception('Connection error, can''t continue evaluation.')
         
@@ -81,10 +138,10 @@ class LLMfuzzer:
         variables = attackConfig.get('Variables', {})
         variables['collaborator-url'] = [self.config['Resources']['Collaborator-URL']]
 
-        print(colored('Attack "' + attackConfig['Name'] + '" loaded.', 'blue'))
+        self.logger.info('Attack "' + attackConfig['Name'] + '" loaded.')
         
         for test in attackConfig['Tests']:
-            print(colored('  Test name: ' + test['Name'], 'green'))
+            self.logger.info('Test name: ' + test['Name'])
             queries = []
             query = test['Query']
             vars_in_query = re.findall(r'{{ (.*?) }}', query)
@@ -96,7 +153,7 @@ class LLMfuzzer:
                 queries.append(temp_query)
             for i, query in enumerate(queries):
                 try:
-                    print(colored('    Sending query ' + str(i) + ' of ' + str(len(queries)), 'yellow'))
+                    self.logger.info('Sending query ' + str(i) + ' of ' + str(len(queries)))
                     # Set the initial request body then update the query attribute
                     jsonpointer.set_pointer(self.config['Connection']['Initial-POST-Body'], self.config['Connection']['Query-Attribute'], query)
                     response = requests.post(
@@ -122,13 +179,13 @@ class LLMfuzzer:
                                     if any(re.findall(regex, llm_response) for regex in test['Regex']):
                                         result = True
                                 except re.error:
-                                    print("Invalid regex: ", test['Regex'])
+                                    self.logger.warning('Invalid regex: ' + test['Regex'])
                             if result:
-                                print(colored('LLM Vulnerable to "' + attackConfig['Name'] + '"', 'red'))
+                                self.logger.critical('LLM Vulnerable to "' + attackConfig['Name'] + '"')
                         elif (test['Weight'] == 'Potential'):
-                            print(colored('LLM Potentially vulnerable to "' + attackConfig['Name'] + '"', 'red'))
+                            self.logger.error('LLM Potentially vulnerable to "' + attackConfig['Name'] + '"')
                 except requests.exceptions.RequestException as e:
-                    print('Connection error, can''t continue evaluation.')
+                    self.logger.critical('Connection error, can''t continue evaluation.')
                     raise SystemExit(e)
         
     def runAttacks(self):

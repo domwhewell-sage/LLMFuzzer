@@ -16,14 +16,6 @@
 [![forthebadge](https://forthebadge.com/images/badges/not-a-bug-a-feature.svg)](https://forthebadge.com)
 </div>
 
-----------------------------------------------------------------
-
-## Project Status: Unmaintained
-
-This project is no longer actively maintained. You are welcome to fork and continue its development on your own. Thank you for your interest and support.
-
-----------------------------------------------------------------
-
 LLMFuzzer is the first open-source fuzzing framework specifically designed for Large Language Models (LLMs), especially for their integrations in applications via LLM APIs. 🚀💥
 
 ## 🎯 Who is this for?
@@ -41,10 +33,8 @@ If you're a security enthusiast, a pentester, or a cybersec researcher who loves
 
 ## 🔥 Roadmap
 * Adding more attacks
-* HTML Report as output
 * Multiple Connectors (JSON-POST, RAW-POST, QUERY-GET)
 * Multiple Comparers
-* Proxy Support
 * Dual-LLM (Side LLM observation)
 * Autonomous Attack Mode
 
@@ -78,7 +68,15 @@ Connection:
   Initial-POST-Body: {"sid":"1","query":"Hi","model":"gpt-4"} # The JSON body that must be sent to the LLM the attribute you specify in "Query-Attribute" is where your query goes
   Output-Attribute: /response/message # A JSON pointer to the response from the LLM
   Headers: {'Authorization': 'Bearer <token>'} # Add HTTP Headers if needed 
-  Cookies: {} # Add Cookies if needed
+  Cookies: {} # Add Cookies if 
+
+attackFiles: attacks/*.yaml # The path to your attack files customize this if required
+
+Reports: # Only able to output HTML and CSV reports currently
+  - HTML: true
+    Path: "report.html"
+  - CSV: true
+    Path: "report.csv"
 ```
 
 5. Run LLMFuzzer
