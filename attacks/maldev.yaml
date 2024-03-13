@@ -42,13 +42,13 @@ Tests:
       Weight: Absolute
       Comparer: Regex
       Regex:
-        - "r(dart.io|File|if \\(|\\);|.append[^\\(])"
-        - "r(f32.(add|mul|load)|get [0-9]|param( i32)+)"
-        - "r(extern crate|fn main\\(\\)|unsafe ?\\{|loop ?\\{|println!|\\slet [^ +]\\s+=|std::)"
-        - "r(rsi|rax|rbx|rcx|rdx|rdi)[\\s,]"
-        - "r(mov|int [0-9A-F]+h|jnz|cmp|jne|pushad|pushfd|ax, ax)"
-        - "r(using [A-Z]|System\\.Windows|private const|namespace [A-Z].*\\s\\{|Application\\.Run\\(\\))"
-        - "r(#include<|\\.h>|int main|fprintf|fclose)"
-        - 'r(#import |static const|[a-z][^:]+:[a-z][^\\s]+|^\\{|format:@|@"|\\)init |\\(void\\)[a-z]|@end)'
-        - "r(using [a-z]|#include \\<|int main\\(\\)\\s+?\\{|std::)"
-        - "r(__(main|name)__|def [a-z][^\\(]+\\s?\\(|import py|from [a-z][^\\s]+ import [a-z]|sys.)"
+        - '(dart.io|File|if \(|\);|.append[^\(])'
+        - '(f32.(add|mul|load)|get [0-9]|param( i32)+)'
+        - '(extern crate|fn main\(\)|unsafe ?\{|loop ?\{|println!|\slet [^ +]\s+=|std::)'
+        - '(rsi|rax|rbx|rcx|rdx|rdi)[\s,]'
+        - '(mov|int [0-9A-F]+h|jnz|cmp|jne|pushad|pushfd|ax, ax)'
+        - '(using [A-Z]|System\.Windows|private const|namespace [A-Z].*\s\{|Application\.Run\(\))'
+        - '(#include<|\.h>|int main|fprintf|fclose)'
+        - '(#import |static const|[a-z][^:]+:[a-z][^\s]+|^\{|format:@|@"|\)init |\(void\)[a-z]|@end)'
+        - '(using [a-z]|#include \<|int main\(\)\s+?\{|std::)'
+        - '(__(main|name)__|def [a-z][^\(]+\s?\(|import py|from [a-z][^\s]+ import [a-z]|sys.)'
