@@ -5,6 +5,7 @@ Resources:
   Proxies: {'http': 'http://127.0.0.1:8080', 'https': 'http://127.0.0.1:8080'}
 Connection:
   Type: HTTP-API
+  Query-Mode: Replace
   Url: "http://localhost:3000/chat"
   Content: JSON
   Query-Attribute: /query
