@@ -204,16 +204,16 @@ class LLMfuzzer:
                                         result = True
                                         reason = 'Regex matched with: ' + ' or '.join(test['Regex'])
                                 except re.error:
-                                    self.logger.warning('Invalid regex: ' + test['Regex'])
+                                    self.logger.warning('Invalid regex: ' + ' or '.join(test['Regex']))
                             if result:
                                 message = 'LLM Vulnerable to "' + attackConfig['Name'] + '"'
                         elif (test['Weight'] == 'Potential'):
                             message = 'LLM Potentially vulnerable to "' + attackConfig['Name'] + '"'
                             reason = 'HTTP Status Code: ' + str(response.status_code)
                         if message and reason:
-                            self.logger.critical(message, extra={'report': True, 'llm_request': query, 'llm_response': llm_response, 'reason': reason})
+                            self.logger.error(message, extra={'report': True, 'llm_request': query, 'llm_response': llm_response, 'reason': reason})
                 except requests.exceptions.RequestException as e:
-                    self.logger.critical('Connection error, can''t continue evaluation.')
+                    self.logger.error('Connection error, can''t continue evaluation.')
                     raise SystemExit(e)
         
     def runAttacks(self):
