@@ -2,7 +2,7 @@
 ---
 Resources:
   Collaborator-URL: "https://webhook.site/#!/view/:uuid"
-  Proxies: {'http': 'http://127.0.0.1:8080', 'https://': 'http://127.0.0.1:8080'}
+  Proxies: {'http': 'http://127.0.0.1:8080', 'https': 'http://127.0.0.1:8080'}
 Connection:
   Type: HTTP-API
   Url: "http://localhost:3000/chat"
