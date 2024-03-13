@@ -96,3 +96,5 @@ LLMFuzzer is licensed under the MIT License. See the LICENSE file for more detai
 ## 🎩 Acknowledgments
 LLMFuzzer couldn't exist without the community. We appreciate all our contributors and supporters. Let's make AI safer together! 💖
 
+@mns - for his repository and allowing the fork
+
