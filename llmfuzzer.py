@@ -5,6 +5,7 @@ import itertools
 import glob
 import requests
 import yaml
+import jsonpointer
 import pyfiglet
 from termcolor import colored
 
@@ -97,7 +98,7 @@ class LLMfuzzer:
                 try:
                     print(colored('    Sending query ' + str(i) + ' of ' + str(len(queries)), 'yellow'))
                     # Set the initial request body then update the query attribute
-                    self.config['Connection']['Initial-POST-Body'][self.config['Connection']['Query-Attribute']] = query
+                    jsonpointer.set_pointer(self.config['Connection']['Initial-POST-Body'], self.config['Connection']['Query-Attribute'], query)
                     response = requests.post(
                         self.config['Connection']['Url'],
                         headers= self.config['Connection']['Headers'],
@@ -107,17 +108,21 @@ class LLMfuzzer:
                         verify=False
                     )
                     if response.status_code == 200:
+                        llm_response = jsonpointer.resolve_pointer(response.json(), self.config['Connection']['Output-Attribute'])
                         #Contains Check
                         if (test['Weight'] == 'Absolute'):
                             result = False
                             if (test['Comparer'] == 'Contains'):
                                 #Check if any Output is in Response
-                                if any(output.lower() in response.text.lower() for output in test['Output']):
+                                if any(output.lower() in llm_response for output in test['Output']):
                                     result = True
                             elif (test['Comparer'] == 'Regex'):
                                 #Check if any Regex match the response
-                                if any(re.findall(regex, response.text) for regex in test['Regex']):
-                                    result = True
+                                try:
+                                    if any(re.findall(regex, llm_response) for regex in test['Regex']):
+                                        result = True
+                                except re.error:
+                                    print("Invalid regex: ", test['Regex'])
                             if result:
                                 print(colored('LLM Vulnerable to "' + attackConfig['Name'] + '"', 'red'))
                         elif (test['Weight'] == 'Potential'):
