@@ -106,21 +106,22 @@ class LLMfuzzer:
                         json= self.config['Connection']['Initial-POST-Body'],
                         verify=False
                     )
-                    #Contains Check
-                    if (test['Weight'] == 'Absolute'):
-                        result = False
-                        if (test['Comparer'] == 'Contains'):
-                            #Check if any Output is in Response
-                            if any(output.lower() in response.text.lower() for output in test['Output']):
-                                result = True
-                        elif (test['Comparer'] == 'Regex'):
-                            #Check if any Regex match the response
-                            if any(re.findall(regex, response.text) for regex in test['Regex']):
-                                result = True
-                        if result:
-                            print(colored('LLM Vulnerable to "' + attackConfig['Name'] + '"', 'red'))
-                    elif (test['Weight'] == 'Potential'):
-                        print(colored('LLM Potentially vulnerable to "' + attackConfig['Name'] + '"', 'red'))
+                    if response.status_code == 200:
+                        #Contains Check
+                        if (test['Weight'] == 'Absolute'):
+                            result = False
+                            if (test['Comparer'] == 'Contains'):
+                                #Check if any Output is in Response
+                                if any(output.lower() in response.text.lower() for output in test['Output']):
+                                    result = True
+                            elif (test['Comparer'] == 'Regex'):
+                                #Check if any Regex match the response
+                                if any(re.findall(regex, response.text) for regex in test['Regex']):
+                                    result = True
+                            if result:
+                                print(colored('LLM Vulnerable to "' + attackConfig['Name'] + '"', 'red'))
+                        elif (test['Weight'] == 'Potential'):
+                            print(colored('LLM Potentially vulnerable to "' + attackConfig['Name'] + '"', 'red'))
                 except requests.exceptions.RequestException as e:
                     print('Connection error, can''t continue evaluation.')
                     raise SystemExit(e)
