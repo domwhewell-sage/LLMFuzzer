@@ -164,7 +164,10 @@ class LLMfuzzer:
         for test in attackConfig['Tests']:
             self.logger.info('Test name: ' + test['Name'])
             queries = []
-            query = test['Query']
+            if self.config['Connection']['Query-Mode'].lower() == 'append':
+                query = self.config['Connection']['Initial-POST-Body'] + " " + test['Query']
+            else:
+                query = test['Query']
             vars_in_query = re.findall(r'{{ (.*?) }}', query)
             combinations = list(itertools.product(*(variables[var] for var in vars_in_query)))
             for combination in combinations:
