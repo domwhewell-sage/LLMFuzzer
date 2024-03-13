@@ -7,9 +7,9 @@ Connection:
   Type: HTTP-API
   Url: "http://localhost:3000/chat"
   Content: JSON
-  Query-Attribute: "#/query"
+  Query-Attribute: /query
   Initial-POST-Body: {"sid":"1","query":"Hi","model":"gpt-4"}
-  Output-Attribute: "#/AI_response/message"
+  Output-Attribute: /AI_response/message
   Headers: {'Authorization': 'Bearer <token>'}
   Cookies: {}
 
