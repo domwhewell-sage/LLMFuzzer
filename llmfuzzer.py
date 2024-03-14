@@ -165,13 +165,12 @@ class LLMfuzzer:
             self.logger.info('Test name: ' + test['Name'])
             queries = []
             if self.config['Connection']['Query-Mode'].lower() == 'append':
-                query = self.config['Connection']['Initial-POST-Body'] + " " + test['Query']
+                temp_query = jsonpointer.resolve_pointer(self.config['Connection']['Initial-POST-Body'], self.config['Connection']['Query-Attribute']) + " " + test['Query']
             else:
-                query = test['Query']
-            vars_in_query = re.findall(r'{{ (.*?) }}', query)
+                temp_query = test['Query']
+            vars_in_query = re.findall(r'{{ (.*?) }}', temp_query)
             combinations = list(itertools.product(*(variables[var] for var in vars_in_query)))
             for combination in combinations:
-                temp_query = test['Query']
                 for var_name, var_value in zip(vars_in_query, combination):
                     temp_query = temp_query.replace('{{ '+var_name+' }}', var_value)
                 queries.append(temp_query)
