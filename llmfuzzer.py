@@ -158,21 +158,8 @@ class LLMfuzzer:
                 raise Exception("Can" "t read config file!")
 
     def checkConnection(self):
-        try:
-            response = requests.post(
-                self.config["Connection"]["Url"],
-                headers=self.config["Connection"]["Headers"],
-                cookies=self.config["Connection"]["Cookies"],
-                proxies=self.config["Resources"]["Proxies"],
-                json=self.config["Connection"]["Initial-POST-Body"],
-                verify=False,
-            )
-
-            if response.status_code != 200:
-                raise Exception("Connection error, can" "t continue evaluation.")
-            self.logger.info("Success connecting to LLM via API")
-        except requests.exceptions.RequestException as e:
-            raise Exception("Connection error, can" "t continue evaluation.")
+        self.send_query()
+        self.logger.info("Success connecting to LLM via API")
 
     def generate_queries(self, attackConfig: dict, initial_query: str) -> list:
         """Generates a list of queries based on the attack configuration and the initial query."""
@@ -207,6 +194,45 @@ class LLMfuzzer:
                 temp_query = temp_query.replace("{{ " + var_name + " }}", var_value)
             queries.append(temp_query)
         return queries
+
+    def send_query(self, query="") -> str:
+        """Sends a query to the LLM and returns the response."""
+        content = self.config["Connection"].get("Content", "")
+        headers = self.config["Connection"].get("Headers", {})
+        cookies = self.config["Connection"].get("Cookies", {})
+        proxies = self.config["Resources"].get("Proxies", {})
+        body = ""
+        if content == "JSON":
+            if "Query-Attribute" not in self.config["Connection"]:
+                raise Exception("Query-Attribute not found in config file!")
+            if "Initial-POST-Body" not in self.config["Connection"]:
+                raise Exception("Initial-POST-Body not found in config file!")
+            if query:
+                jsonpointer.set_pointer(
+                    self.config["Connection"]["Initial-POST-Body"],
+                    self.config["Connection"]["Query-Attribute"],
+                    query,
+                )
+            body = self.config["Connection"]["Initial-POST-Body"]
+        try:
+            if content == "JSON":
+                response = requests.post(
+                    self.config["Connection"]["Url"],
+                    headers=headers,
+                    cookies=cookies,
+                    proxies=proxies,
+                    json=body,
+                    verify=False,
+                )
+            if response.status_code == 200:
+                return jsonpointer.resolve_pointer(
+                    response.json(), self.config["Connection"]["Output-Attribute"]
+                )
+            else:
+                return ""
+        except requests.exceptions.RequestException as e:
+            self.logger.error("Connection error, can" "t continue evaluation.")
+            raise SystemExit(e)
 
     def check_response(
         self, attackName: str, testConfig: dict, llm_response: str
@@ -257,45 +283,22 @@ class LLMfuzzer:
             self.logger.info("Test name: " + test["Name"])
             queries = self.generate_queries(attackConfig, test["Query"])
             for i, query in enumerate(queries):
-                try:
-                    self.logger.info(
-                        "Sending query " + str(i) + " of " + str(len(queries))
+                self.logger.info("Sending query " + str(i) + " of " + str(len(queries)))
+                llm_response = self.send_query(query)
+                if llm_response:
+                    message, reason = self.check_response(
+                        attackConfig["Name"], test, llm_response
                     )
-                    # Set the initial request body then update the query attribute
-                    jsonpointer.set_pointer(
-                        self.config["Connection"]["Initial-POST-Body"],
-                        self.config["Connection"]["Query-Attribute"],
-                        query,
-                    )
-                    response = requests.post(
-                        self.config["Connection"]["Url"],
-                        headers=self.config["Connection"]["Headers"],
-                        cookies=self.config["Connection"]["Cookies"],
-                        proxies=self.config["Resources"]["Proxies"],
-                        json=self.config["Connection"]["Initial-POST-Body"],
-                        verify=False,
-                    )
-                    if response.status_code == 200:
-                        llm_response = jsonpointer.resolve_pointer(
-                            response.json(),
-                            self.config["Connection"]["Output-Attribute"],
+                    if message and reason:
+                        self.logger.error(
+                            message,
+                            extra={
+                                "report": True,
+                                "llm_request": query,
+                                "llm_response": llm_response,
+                                "reason": reason,
+                            },
                         )
-                        message, reason = self.check_response(
-                            attackConfig["Name"], test, llm_response
-                        )
-                        if message and reason:
-                            self.logger.error(
-                                message,
-                                extra={
-                                    "report": True,
-                                    "llm_request": query,
-                                    "llm_response": llm_response,
-                                    "reason": reason,
-                                },
-                            )
-                except requests.exceptions.RequestException as e:
-                    self.logger.error("Connection error, can" "t continue evaluation.")
-                    raise SystemExit(e)
 
     def runAttacks(self):
         # Fetch all tests from attacks folder
