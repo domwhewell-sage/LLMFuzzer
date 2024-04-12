@@ -208,12 +208,14 @@ class LLMfuzzer:
             if "Initial-POST-Body" not in self.config["Connection"]:
                 raise Exception("Initial-POST-Body not found in config file!")
             if query:
-                jsonpointer.set_pointer(
+                body = jsonpointer.set_pointer(
                     self.config["Connection"]["Initial-POST-Body"],
                     self.config["Connection"]["Query-Attribute"],
                     query,
+                    inplace=False,
                 )
-            body = self.config["Connection"]["Initial-POST-Body"]
+            else:
+                body = self.config["Connection"]["Initial-POST-Body"]
         try:
             if content == "JSON":
                 response = requests.post(
