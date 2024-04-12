@@ -95,17 +95,11 @@ class CSVFormatter(logging.Formatter):
 
 class LLMfuzzer:
 
-    def __init__(self, configPath):
-        self.configPath = configPath
-        # Check if config file exists
-        if not os.path.isfile(self.configPath):
-            raise Exception("Can" "t read config file!")
-
-        # Load YAML config
-        self._loadConfig()
+    def __init__(self, config):
+        self.config = config
 
         self.logger = self._setup_logger("LLMfuzzer")
-        self.logger.info("! Loading config from: " + configPath)
+        self.logger.info("! Loaded config")
 
     def _setup_logger(self, logger_name, level=logging.INFO):
         log = logging.getLogger(logger_name)
@@ -149,13 +143,6 @@ class LLMfuzzer:
         log.setLevel(level)
         log.addHandler(console_handler)
         return log
-
-    def _loadConfig(self):
-        with open(self.configPath, "r") as stream:
-            try:
-                self.config = yaml.safe_load(stream)
-            except yaml.YAMLError as exc:
-                raise Exception("Can" "t read config file!")
 
     def checkConnection(self):
         self.send_query()
